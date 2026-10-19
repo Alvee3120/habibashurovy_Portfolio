@@ -33,9 +33,9 @@
   <!-- Canonical URL. EDIT ME: replace with the final live address. -->
   <link rel="canonical" href="https://example.com/">
 
-  <!-- Favicon (180x180). Doubles as the iOS "Add to Home Screen" icon. -->
-  <link rel="icon" type="image/png" sizes="180x180" href="favicon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+  <!-- Favicon (300x300). Doubles as the iOS "Add to Home Screen" icon. -->
+  <link rel="icon" type="image/png" sizes="300x300" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="300x300" href="favicon.png">
 
   <!-- ======================================================================
        SOCIAL SHARING (Open Graph + Twitter/X)
@@ -461,6 +461,12 @@
     color: #0B3D2E;
   }
   .link-card--featured .pill svg { width: 25px; height: 25px; }
+  /* The SHORDINDU logo is dark on a transparent background, so it sits on the
+     lime circle where it has strong contrast. */
+  .link-card--featured .pill img {
+    width: 34px; height: 34px;
+    object-fit: contain;
+  }
   .link-card--featured .link-card__label {
     font-size: 1.08rem; font-weight: 700; letter-spacing: .05em;
   }
@@ -777,7 +783,7 @@
               Featured
             </span>
             <span class="pill" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7Zm0 9.6A2.6 2.6 0 1 1 14.6 9 2.6 2.6 0 0 1 12 11.6Z"/></svg>
+              <img src="shordindu_Logo.png" width="34" height="34" alt="" decoding="async">
             </span>
             <span class="link-card__text">
               <span class="link-card__label">SHORDINDU</span>
@@ -805,7 +811,7 @@
 
       <ul class="link-list">
         <li style="--i:5">
-          <a class="link-card link-card--contact" href="mailto:habibashurovy@gmail.com">
+          <a class="link-card link-card--contact" id="contactLink" href="mailto:habibashurovy@gmail.com">
             <span class="pill" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                 <rect x="2.6" y="4.6" width="18.8" height="14.8" rx="2.6"/>
@@ -863,6 +869,8 @@
     "use strict";
 
     var EMAIL = "habibashurovy@gmail.com";                 // EDIT ME if it changes
+    /* Where to send visitors if their device has no mail app set up. */
+    var WEBMAIL = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(EMAIL);
     var toastEl = document.getElementById("toast");
     var toastTimer;
 
@@ -909,6 +917,38 @@
         copyText(EMAIL).then(function (ok) {
           showToast(ok ? "Copied!" : "Copy failed — email is " + EMAIL);
         });
+      });
+    }
+
+    /* --- "Contact me!" card -------------------------------------------------
+       Phones and tablets: a plain mailto: link hands off to the phone's mail
+       app, so we leave it completely alone.
+
+       Desktops: mailto: silently does nothing when no mail app is registered,
+       so we open Gmail's compose window instead. That window is opened
+       synchronously inside the click, because a delayed open is treated as a
+       popup and gets blocked. If it is blocked anyway we fall through to the
+       mailto: link, so the click is never a dead end. --------------------- */
+    var contactLink = document.getElementById("contactLink");
+
+    /* True on a phone or tablet (it has a mail app, so the mailto: link is
+       perfect and we leave it alone). This asks about the actual input device
+       rather than sniffing the user agent — a desktop browser in DevTools'
+       device emulation mode spoofs a mobile user agent, and sniffing would
+       wrongly send it down the phone path. */
+    var isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+    if (contactLink && !isTouchDevice) {
+      contactLink.addEventListener("click", function (event) {
+        var win = window.open(WEBMAIL, "_blank");
+
+        if (!win) {                                  // popup blocked
+          showToast("Couldn't open Gmail — use Copy email");
+          return;                                    // let mailto: try instead
+        }
+
+        event.preventDefault();                      // Gmail opened, skip mailto:
+        try { win.opener = null; } catch (err) { /* ignore */ }
       });
     }
 
